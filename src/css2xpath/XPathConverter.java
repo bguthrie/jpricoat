@@ -5,8 +5,10 @@ import java.io.IOException;
 
 import org.w3c.css.sac.*;
 
+import com.steadystate.css.parser.selectors.ChildSelectorImpl;
+
 public class XPathConverter {
-	private Selector selector;
+	private Selector _selector;
 	
 	public XPathConverter(Parser parser, String css) throws CSSException {
 		SelectorList selectors = null;
@@ -16,37 +18,40 @@ public class XPathConverter {
 				throw new CSSException("Expected only one CSS selector, got " + selectors.getLength() + " for selector " + css);
 			}
 		} catch(IOException e) { }
-		this.selector = selectors.item(0);
+		this._selector = selectors.item(0);
 	}
 	
 	public XPathConverter(Selector selector) {
-		this.selector = selector;
+		this._selector = selector;
 	}
 	
-	public Selector getSelector() { return this.selector; }
+	public Selector getSelector() { return this._selector; }
 	
 	public String toXPath() {
 		return this.toXPath("//");
 	}
 	
 	public String toXPath(String prefix) {
-		switch(this.selector.getSelectorType()) {
+		if (this._selector == null) return prefix;
+		
+		switch(this._selector.getSelectorType()) {
 		case Selector.SAC_CONDITIONAL_SELECTOR:
-			return conditionalSelectorToXPath((ConditionalSelector) this.selector, prefix);
+			ConditionalSelector selector = (ConditionalSelector) this._selector;
+			return new XPathConverter(selector.getSimpleSelector()).toXPath(prefix) + "[" + conditionalSelectorToXPath(selector.getCondition()) + "]";
 		case Selector.SAC_ANY_NODE_SELECTOR:
 			throw new RuntimeException("Any node selector not supported");
 		case Selector.SAC_CDATA_SECTION_NODE_SELECTOR:
 			throw new RuntimeException("CDATA node selector");
 		case Selector.SAC_CHILD_SELECTOR:
-			throw new RuntimeException("Child node selector not supported");
+			return childSelectorToXPath((DescendantSelector) this._selector, prefix);
 		case Selector.SAC_COMMENT_NODE_SELECTOR:
 			throw new RuntimeException("Comment node selector not supported");
 		case Selector.SAC_DESCENDANT_SELECTOR:
-			throw new RuntimeException("Descendant node selector not supported");
+			return descendantSelectorToXPath((DescendantSelector) this._selector, prefix);
 		case Selector.SAC_DIRECT_ADJACENT_SELECTOR:
 			throw new RuntimeException("Direct adjacent node selector not supported");
 		case Selector.SAC_ELEMENT_NODE_SELECTOR:
-			return elementNodeSelectorToXPath(prefix);
+			return elementNodeSelectorToXPath((ElementSelector) this._selector, prefix);
 		case Selector.SAC_NEGATIVE_SELECTOR:
 			throw new RuntimeException("Negation selector not supported");
 		case Selector.SAC_PROCESSING_INSTRUCTION_NODE_SELECTOR:
@@ -61,27 +66,32 @@ public class XPathConverter {
 		}
 	}
 
-	private String elementNodeSelectorToXPath(String prefix) {
-		ElementSelector selector = (ElementSelector) this.selector;
-		return prefix + selector.getLocalName();
+	private String childSelectorToXPath(DescendantSelector selector, String prefix) {
+		return new XPathConverter(selector.getAncestorSelector()).toXPath(prefix) + new XPathConverter(selector.getSimpleSelector()).toXPath("/");
 	}
 
-	private String conditionalSelectorToXPath(ConditionalSelector selector, String prefix) {
-		Condition condition = selector.getCondition();
+	private String descendantSelectorToXPath(DescendantSelector selector, String prefix) {
+		return new XPathConverter(selector.getAncestorSelector()).toXPath(prefix) + new XPathConverter(selector.getSimpleSelector()).toXPath("//"); 
+	}
 
+	private String elementNodeSelectorToXPath(ElementSelector selector, String prefix) {
+		return prefix + selector.toString();
+	}
+
+	private String conditionalSelectorToXPath(Condition condition) {
 		switch(condition.getConditionType()) {
 		case Condition.SAC_AND_CONDITION:
 			throw new RuntimeException("And condition not supported");
 		case Condition.SAC_ATTRIBUTE_CONDITION:
-			return attributeConditionSelectorToXPath(selector, (AttributeCondition) condition, prefix);
+			return attributeConditionToXPath((AttributeCondition) condition);
 		case Condition.SAC_BEGIN_HYPHEN_ATTRIBUTE_CONDITION:
 			throw new RuntimeException("Begin hyphen attribute condition not supported");
 		case Condition.SAC_CLASS_CONDITION:
-			return classConditionSelectorToXPath(selector, (AttributeCondition) condition, prefix);
+			return classConditionToXPath((AttributeCondition) condition);
 		case Condition.SAC_CONTENT_CONDITION:
 			throw new RuntimeException("Content condition not supported");
 		case Condition.SAC_ID_CONDITION:
-			return idConditionSelectorToXPath(selector, (AttributeCondition) condition, prefix); 
+			return idConditionToXPath((AttributeCondition) condition); 
 		case Condition.SAC_LANG_CONDITION:
 			throw new RuntimeException("Lang condition not supported");
 		case Condition.SAC_NEGATIVE_CONDITION:
@@ -97,20 +107,43 @@ public class XPathConverter {
 		case Condition.SAC_POSITIONAL_CONDITION:
 			throw new RuntimeException("Positional condition not supported");
 		case Condition.SAC_PSEUDO_CLASS_CONDITION:
-			throw new RuntimeException("Pseudo-class condition not supported");
+			return pseudoClassConditionToXPath((AttributeCondition) condition);
 		default: return "";
 		}
 	}
-
-	private String classConditionSelectorToXPath(ConditionalSelector selector, AttributeCondition condition, String prefix) {
-		return prefix + "*[contains(concat(' ', @class, ' '), ' " + ((AttributeCondition) condition).getValue() + " ')]";
+	
+	private enum PseudoClass {
+		FIRST("first"), LAST("last"), NONE("");
+		private String className;
+		private PseudoClass(String className) { this.className = className; }
+		public static PseudoClass forName(String name) {
+			for (PseudoClass pc : values()) {
+				if (pc.className.equals(name)) return pc;
+			}
+			return NONE;
+		}
+	}
+	
+	private String pseudoClassConditionToXPath(AttributeCondition condition) {
+		switch(PseudoClass.forName(condition.getValue())) {
+		case FIRST: 
+			return "position() = 1";
+		case LAST:
+			return "position() = last()";
+		default: 
+			return condition.getValue() + "(.)"; 
+		}
 	}
 
-	private String idConditionSelectorToXPath(ConditionalSelector selector, AttributeCondition condition, String prefix) {
-		return prefix + "@id = '" + condition.getValue() + "'";
+	private String classConditionToXPath(AttributeCondition condition) {
+		return "contains(concat(' ', @class, ' '), ' " + ((AttributeCondition) condition).getValue() + " ')";
 	}
 
-	private String attributeConditionSelectorToXPath(ConditionalSelector selector, AttributeCondition condition, String prefix) {
-		return prefix + new XPathConverter(selector.getSimpleSelector()).toXPath("") + "[@" + condition.getLocalName() + " = '" + condition.getValue() + "']";
+	private String idConditionToXPath(AttributeCondition condition) {
+		return "@id = '" + condition.getValue() + "'";
+	}
+
+	private String attributeConditionToXPath(AttributeCondition condition) {
+		return "@" + condition.getLocalName() + " = '" + condition.getValue() + "'";
 	}
 }
