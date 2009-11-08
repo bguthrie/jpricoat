@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="jar" name="jcss2xpath">
+  <description>
+    CSS2XPath generates XPath from CSS selectors in two hundred lines of mostly nasty Java.
+  </description>
+
+  <property name="src.dir" value="src"/>
+  <property name="lib.dir" value="lib"/>
+  <property name="build.dir" value="build"/>
+  <property name="test.dir" value="test"/>
+  <property name="junit.output.dir" value="junit"/>
+  <property name="classes.dir" value="${build.dir}/classes"/>
+  <property name="javac.version" value="1.5"/>
+
+  <path id="build.classpath">
+    <fileset dir="${lib.dir}" includes="*.jar"/>
+  </path>
+
+  <path id="test.classpath">
+  	<pathelement location="${classes.dir}"/>
+  </path>
+	
+  <target name="prepare" depends="clean" description="Creates the directories needed for building">
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${classes.dir}"/>
+  </target>
+
+  <target name="compile" depends="prepare" description="Compile the source files for the project.">
+    <javac destdir="${classes.dir}" debug="true" source="${javac.version}" target="${javac.version}">
+      <classpath refid="build.classpath"/>
+      <src path="${src.dir}"/>
+      <include name="**/*.java"/>
+    </javac>
+
+    <copy todir="${classes.dir}" overwrite="true">
+      <fileset dir="${src.dir}" includes="**/*.properties"/>
+    </copy>
+  </target>
+
+  <target name="test" depends="compile" description="Runs all tests">
+  	<javac destdir="${classes.dir}" debug="true" source="${javac.version}" target="${javac.version}">
+      <classpath refid="build.classpath"/>
+  	  <src path="${test.dir}"/>
+  	  <include name="**/*.java"/>
+  	</javac>
+  	  	
+    <mkdir dir="${junit.output.dir}"/>
+    <junit fork="yes" printsummary="withOutAndErr">
+      <classpath refid="build.classpath"/>
+      <classpath refid="test.classpath"/>
+      <formatter type="xml"/>
+      <test name="css2xpath.XPathConverterTest" todir="${junit.output.dir}"/>
+    </junit>
+    
+    <junitreport todir="${junit.output.dir}">
+      <fileset dir="${junit.output.dir}">
+        <include name="TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${junit.output.dir}"/>
+    </junitreport>
+  </target>
+
+  <target name="jar" depends="test" description="Create the jcss2xpath.jar file">
+    <jar destfile="${build.dir}/jcss2xpath.jar">
+      <fileset dir="${classes.dir}">
+        <include name="**/*.class"/>
+        <include name="**/*.properties"/>
+      </fileset>
+      <zipfileset src="${lib.dir}/cssparser-0.9.5.jar" includes="**/*"/>
+      <zipfileset src="${lib.dir}/sac.jar" includes="**/*"/>
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="clean" description="clean almost everything">
+    <delete dir="${build.dir}"/>
+  	<delete dir="${junit.output.dir}"/>
+    <delete file="${build.dir}/jcss2xpath.jar" quiet="true"/>
+  </target>
+</project>
+	
+	
+<!--	
+<project basedir="." default="build" name="CSS2XPath">
+    <property environment="env"/>
+    <property name="junit.output.dir" value="junit"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.5"/>
+    <property name="source" value="1.5"/>
+    <path id="CSS2XPath.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/sac.jar"/>
+        <pathelement location="lib/junit.jar"/>
+        <pathelement location="lib/cssparser-0.9.5.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src" excludes="**/*.launch, **/*.java"/>
+        </copy>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="`" excludes="**/*.launch, **/*.java"/>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="CSS2XPath.classpath"/>
+        </javac>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="test"/>
+            <classpath refid="CSS2XPath.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="test">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="css2xpath.XPathConverterTest" todir="${junit.output.dir}"/>
+            <classpath refid="CSS2XPath.classpath"/>
+        </junit>
+    </target>
+    <target name="junitreport">
+        <junitreport todir="${junit.output.dir}">
+            <fileset dir="${junit.output.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${junit.output.dir}"/>
+        </junitreport>
+    </target>
+</project>
+-->
