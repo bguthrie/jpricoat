@@ -1,4 +1,4 @@
-package css2xpath;
+package com.brianguthrie.jpricoat;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -91,7 +91,7 @@ public class XPathConverterTest {
 	}
 	
 	public void assertXPath(String expectedXPath, String css) {
-		assertEquals(expectedXPath, new XPathConverter(new SACParserCSS2(), css).toXPath());
+		assertEquals(expectedXPath, new XPathConverter(css).toXPath());
 	}
 	
 }

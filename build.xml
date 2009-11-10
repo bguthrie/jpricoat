@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project basedir="." default="jar" name="jcss2xpath">
+<project basedir="." default="jar" name="jpricoat">
   <description>
-    CSS2XPath generates XPath from CSS selectors in two hundred lines of mostly nasty Java.
+    jpricoat is a very thin wrapper around an HTML parser that allows you to perform 
+    Hpricot-style searches, for use largely with JVM-based dynlangs.
   </description>
 
   <property name="src.dir" value="src"/>
@@ -49,7 +50,7 @@
       <classpath refid="build.classpath"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
-      <test name="css2xpath.XPathConverterTest" todir="${junit.output.dir}"/>
+      <test name="com.brianguthrie.jpricoat.XPathConverterTest" todir="${junit.output.dir}"/>
     </junit>
     
     <junitreport todir="${junit.output.dir}">
@@ -60,8 +61,8 @@
     </junitreport>
   </target>
 
-  <target name="jar" depends="test" description="Create the jcss2xpath.jar file">
-    <jar destfile="${build.dir}/jcss2xpath.jar">
+  <target name="jar" depends="test" description="Create the jpricoat.jar file">
+    <jar destfile="${build.dir}/jpricoat.jar">
       <fileset dir="${classes.dir}">
         <include name="**/*.class"/>
         <include name="**/*.properties"/>
@@ -77,6 +78,6 @@
   <target name="clean" description="clean almost everything">
     <delete dir="${build.dir}"/>
   	<delete dir="${junit.output.dir}"/>
-    <delete file="${build.dir}/jcss2xpath.jar" quiet="true"/>
+    <delete file="${build.dir}/jpricoat.jar" quiet="true"/>
   </target>
 </project>
