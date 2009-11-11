@@ -50,7 +50,7 @@
       <classpath refid="build.classpath"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
-      <test name="com.brianguthrie.jpricoat.XPathConverterTest" todir="${junit.output.dir}"/>
+      <test name="com.brianguthrie.jpricoat.AllTests" todir="${junit.output.dir}"/>
     </junit>
     
     <junitreport todir="${junit.output.dir}">
@@ -69,6 +69,7 @@
       </fileset>
       <zipfileset src="${lib.dir}/cssparser-0.9.5.jar" includes="**/*"/>
       <zipfileset src="${lib.dir}/sac.jar" includes="**/*"/>
+    	<zipfileset src="${lib.dir}/cobra.jar" includes="**/*"/>
       <manifest>
         <attribute name="Built-By" value="${user.name}"/>
       </manifest>

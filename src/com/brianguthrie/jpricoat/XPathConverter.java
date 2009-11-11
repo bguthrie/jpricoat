@@ -2,11 +2,7 @@ package com.brianguthrie.jpricoat;
 
 import java.io.CharArrayReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.w3c.css.sac.*;
-
 import com.steadystate.css.parser.SACParserCSS2;
 
 /*
@@ -69,15 +65,6 @@ public class XPathConverter {
 	
 	public XPathConverter(Selector selector) {
 		this._selector = selector;
-	}
-	
-	public static String[] convert(String originalSelector) {
-		String[] selectors = originalSelector.split(",\\s*");
-		String[] xpaths = new String[selectors.length];
-		for (int i = 0; i < selectors.length; i++) {
-			xpaths[i] = new XPathConverter(selectors[i]).toXPath();
-		}
-		return xpaths;
 	}
 	
 	public Selector getSelector() { return this._selector; }

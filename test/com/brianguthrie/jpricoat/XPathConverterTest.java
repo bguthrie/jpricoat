@@ -3,7 +3,6 @@ package com.brianguthrie.jpricoat;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import com.steadystate.css.parser.*;
 
 public class XPathConverterTest {
 
