@@ -46,6 +46,27 @@ public class JpricoatTest {
 		assertEquals(2, rootSearch.search("a").getLength());
 	}
 	
+	@Test
+	public void searchShouldHandleMultipleSelectors() throws Exception {
+		Node root = node("" +
+				"<div class=\"content\">" +
+					"<h1>A heading!</h1>" +
+					"<h2>A subheading!</h2>" +
+				"</div>");
+		Jpricoat search = new Jpricoat(root).search("div.content").search("h1", "h2");
+		assertEquals(2, search.getLength());
+	}
+	
+   @Test
+   public void searchShouldNotReturnDuplicateNodes() throws Exception {
+       Node root = node("" +
+               "<div class=\"content\">" +
+                       "<h1 class=\"heading\">A heading!</h1>" +
+               "</div>");
+       Jpricoat search = new Jpricoat(root).search(".content").search("h1", ".heading");
+       assertEquals(1, search.getLength());
+   }
+	
 	private Node node(String markup) throws Exception {
 		SimpleUserAgentContext uacontext = new SimpleUserAgentContext();
 		uacontext.setScriptingEnabled(false);
