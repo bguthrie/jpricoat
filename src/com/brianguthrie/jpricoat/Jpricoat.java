@@ -6,6 +6,7 @@ import java.io.Reader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -92,6 +93,14 @@ public class Jpricoat implements IJpricoat {
 	private static boolean isXPath(String search) {
 		return search.matches("^(\\.\\/|\\/)");
 	}
+	
+	public Iterator<Node> iterator() {
+		return new HumaneNodeList(this.getChildNodes()).iterator();
+	}
+	
+	//
+	// Begin delegated methods. Ick.
+	//
 
 	public Node appendChild(Node newChild) throws DOMException {
 		return wrappedNode.appendChild(newChild);
