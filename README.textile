@@ -1,0 +1,25 @@
+h1. Introduction
+
+Jpricoat is a Java library for parsing HTML and searching for nodes using CSS selectors inspired by Hpricot's API for the same. I don't do any professional Java these days, but I intend to use it in multiple JVM-hosted languages and don't want users of those languages to have to pull in another language runtime in order to use (although perhaps that's where we're going? Who can say?)
+
+Jpricoat is built on top of the "Cobra HTML parser":http://lobobrowser.org/cobra.jsp, because it seemed nice enough and because most of the alternatives looked like kind of a pain to use.
+
+I consider this a DSL for Java, in the sense that it is a fluent API that elides the underlying implementation details. It does not expect you to built a URL object out of a string, for goodness' sake, and wraps all of its inner crap in RuntimeExceptions, because typed exceptions are stupid.
+
+It provides an implementation of NodeList named HumaneNodeList, because something that is called List should probably act like a Java list, but does not attempt to wrap Node in any meaningful way, because one man can only do so much. A Jpricoat instance is itself a Node, so it shouldn't be impossible, but other JVM-hosted dynlangs seem to do their own wrapping so I'm not losing any sleep over it.
+
+h1. Examples
+
+h3. Java
+
+  for(Node n : new Jpricoat("http://www.google.com").search("img")) {
+    System.out.println("Found image: " + node.getAttributes().getNamedItem("src"));
+  }
+
+h3. Groovy
+
+  new Jpricoat("http://www.google.com").search("img").iterator().each { elt ->
+    println "Found image: ${elt.'@src'}"
+  }
+
+JRuby, Ioke, and Clojure examples forthcoming. But you get the picture, I'm sure.
