@@ -12,14 +12,18 @@ h1. Examples
 
 h3. Java
 
+<code>
   for(Node n : new Jpricoat("http://www.google.com").search("img")) {
     System.out.println("Found image: " + node.getAttributes().getNamedItem("src"));
   }
+</code>
 
 h3. Groovy
 
+<code>
   new Jpricoat("http://www.google.com").search("img").iterator().each { elt ->
     println "Found image: ${elt.'@src'}"
   }
+</code>
 
 JRuby, Ioke, and Clojure examples forthcoming. But you get the picture, I'm sure.
