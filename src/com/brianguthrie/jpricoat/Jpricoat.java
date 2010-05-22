@@ -2,7 +2,6 @@ package com.brianguthrie.jpricoat;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,50 +9,65 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
+import org.lobobrowser.html.UserAgentContext;
 import org.lobobrowser.html.domimpl.DocumentFragmentImpl;
 import org.lobobrowser.html.parser.HtmlParser;
 import org.lobobrowser.html.test.SimpleUserAgentContext;
-import org.w3c.dom.DOMException;
+
 import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.UserDataHandler;
 
-public class Jpricoat implements IJpricoat {
+/**
+ * A Jpricoat object begins with a URL or a node that you can search with CSS or
+ * XPath expressions to narrow down your list of nodes. The search method returns
+ * a new Jpricoat with an empty document as its root and the found nodes appended
+ * as children. Successive searches are restricted to those child nodes.
+ *
+ * Usage: <code>for (Node n : new Jpricoat("http://somesite.com").search(".some_link")) { ... }
+ * 
+ * Jpricoat objects are immutable, although the lists they return may not be.
+ */
+public class Jpricoat implements Iterable<Node> {
 	
-	private Node wrappedNode;
+	private Node rootNode;
 	
+	/**
+	 * Use the given node as the root for this Jpricoat object.
+	 */
 	public Jpricoat(Node node) {
-		this.wrappedNode = node;
+		this.rootNode = node;
 	}
 	
+	/**
+	 * Retrieve, parse, and use the document at the given URL string as the root for this Jpricoat object.
+	 */
 	public Jpricoat(String urlString) {
 		try {
-			SimpleUserAgentContext context = new SimpleUserAgentContext();
-			context.setScriptingEnabled(false);
-			context.setExternalCSSEnabled(false);
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-			URL url = new URL(urlString);
-			InputStream in = url.openStream();
-			Reader reader = new InputStreamReader(in, "ISO-8859-1");
-			HtmlParser parser = new HtmlParser(context, doc);
-			parser.parse(reader);
-			this.wrappedNode = doc;
+			Document doc = buildNewDocument();
+			InputStream in = new URL(urlString).openStream();
+			HtmlParser parser = new HtmlParser(buildParserContext(), doc);
+			parser.parse(new InputStreamReader(in));
+			this.rootNode = doc;
 			in.close();			
 		} catch(Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 	
-	public IJpricoat search(List<String> selectors) {
+	/**
+	 * Given a list of CSS or XPath selectors, returns a new Jpricoat object representing
+	 * the results of the search.
+	 */
+	public Jpricoat search(List<String> selectors) {
 		try {
 			Jpricoat coating = new Jpricoat(new DocumentFragmentImpl());
 			for (String selector : normalizeSearchesAsXPath(selectors)) {
-				NodeList foundNodes = (NodeList) XPathFactory.newInstance().newXPath().evaluate(selector, this.wrappedNode, XPathConstants.NODESET);
+				NodeList foundNodes = (NodeList) XPathFactory.newInstance().newXPath().evaluate(selector, this.rootNode, XPathConstants.NODESET);
 				coating.appendAllNodes(foundNodes);
 			}
 			return coating;
@@ -62,16 +76,35 @@ public class Jpricoat implements IJpricoat {
 		}
 	}
 	
-	public IJpricoat search(String... selectors) {
+	/**
+	 * Given a list of CSS or XPath selectors, return a new Jpricoat object representing
+	 * the results of the search.
+	 */
+	public Jpricoat search(String... selectors) {
 		return this.search(new ArrayList<String>(Arrays.asList(selectors)));
+	}
+	
+	/**
+	 * Returns an iterator for nodes represented by this object. Iterator is of type
+	 * HumaneNodeList.
+	 */
+	public Iterator<Node> iterator() {
+		return allNodes().iterator();
+	}
+	
+	/**
+	 * Returns the list of all nodes represented by this Jpricoat object.
+	 */
+	public HumaneNodeList allNodes() {
+		return new HumaneNodeList(rootNode.getChildNodes());
 	}
 
 	private void appendAllNodes(NodeList nodesToAdd) {
-		HumaneNodeList existingNodes = new HumaneNodeList(this.getChildNodes());
+		HumaneNodeList existingNodes = new HumaneNodeList(rootNode.getChildNodes());
 		HumaneNodeList newNodes = new HumaneNodeList(nodesToAdd);
 		for (Node newNode : newNodes) {
 			if (!existingNodes.contains(newNode)) {
-				this.appendChild(newNode);
+				rootNode.appendChild(newNode);
 			}
 		}
 	}
@@ -93,160 +126,16 @@ public class Jpricoat implements IJpricoat {
 	private static boolean isXPath(String search) {
 		return search.matches("^(\\.\\/|\\/)");
 	}
-	
-	public Iterator<Node> iterator() {
-		return new HumaneNodeList(this.getChildNodes()).iterator();
+		
+	private UserAgentContext buildParserContext() {
+		SimpleUserAgentContext context = new SimpleUserAgentContext();
+		context.setScriptingEnabled(false);
+		context.setExternalCSSEnabled(false);
+		return context;
 	}
 	
-	//
-	// Begin delegated methods. Ick.
-	//
-
-	public Node appendChild(Node newChild) throws DOMException {
-		return wrappedNode.appendChild(newChild);
+	private Document buildNewDocument() throws ParserConfigurationException {
+		return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 	}
 
-	public Node cloneNode(boolean deep) {
-		return wrappedNode.cloneNode(deep);
-	}
-
-	public short compareDocumentPosition(Node other) throws DOMException {
-		return wrappedNode.compareDocumentPosition(other);
-	}
-
-	public NamedNodeMap getAttributes() {
-		return wrappedNode.getAttributes();
-	}
-
-	public String getBaseURI() {
-		return wrappedNode.getBaseURI();
-	}
-
-	public NodeList getChildNodes() {
-		return wrappedNode.getChildNodes();
-	}
-
-	public Object getFeature(String feature, String version) {
-		return wrappedNode.getFeature(feature, version);
-	}
-
-	public Node getFirstChild() {
-		return wrappedNode.getFirstChild();
-	}
-
-	public Node getLastChild() {
-		return wrappedNode.getLastChild();
-	}
-
-	public String getLocalName() {
-		return wrappedNode.getLocalName();
-	}
-
-	public String getNamespaceURI() {
-		return wrappedNode.getNamespaceURI();
-	}
-
-	public Node getNextSibling() {
-		return wrappedNode.getNextSibling();
-	}
-
-	public String getNodeName() {
-		return wrappedNode.getNodeName();
-	}
-
-	public short getNodeType() {
-		return wrappedNode.getNodeType();
-	}
-
-	public String getNodeValue() throws DOMException {
-		return wrappedNode.getNodeValue();
-	}
-
-	public Document getOwnerDocument() {
-		return wrappedNode.getOwnerDocument();
-	}
-
-	public Node getParentNode() {
-		return wrappedNode.getParentNode();
-	}
-
-	public String getPrefix() {
-		return wrappedNode.getPrefix();
-	}
-
-	public Node getPreviousSibling() {
-		return wrappedNode.getPreviousSibling();
-	}
-
-	public String getTextContent() throws DOMException {
-		return wrappedNode.getTextContent();
-	}
-
-	public Object getUserData(String key) {
-		return wrappedNode.getUserData(key);
-	}
-
-	public boolean hasAttributes() {
-		return wrappedNode.hasAttributes();
-	}
-
-	public boolean hasChildNodes() {
-		return wrappedNode.hasChildNodes();
-	}
-
-	public Node insertBefore(Node newChild, Node refChild) throws DOMException {
-		return wrappedNode.insertBefore(newChild, refChild);
-	}
-
-	public boolean isDefaultNamespace(String namespaceURI) {
-		return wrappedNode.isDefaultNamespace(namespaceURI);
-	}
-
-	public boolean isEqualNode(Node arg) {
-		return wrappedNode.isEqualNode(arg);
-	}
-
-	public boolean isSameNode(Node other) {
-		return wrappedNode.isSameNode(other);
-	}
-
-	public boolean isSupported(String feature, String version) {
-		return wrappedNode.isSupported(feature, version);
-	}
-
-	public String lookupNamespaceURI(String prefix) {
-		return wrappedNode.lookupNamespaceURI(prefix);
-	}
-
-	public String lookupPrefix(String namespaceURI) {
-		return wrappedNode.lookupPrefix(namespaceURI);
-	}
-
-	public void normalize() {
-		wrappedNode.normalize();
-	}
-
-	public Node removeChild(Node oldChild) throws DOMException {
-		return wrappedNode.removeChild(oldChild);
-	}
-
-	public Node replaceChild(Node newChild, Node oldChild) throws DOMException {
-		return wrappedNode.replaceChild(newChild, oldChild);
-	}
-
-	public void setNodeValue(String nodeValue) throws DOMException {
-		wrappedNode.setNodeValue(nodeValue);
-	}
-
-	public void setPrefix(String prefix) throws DOMException {
-		wrappedNode.setPrefix(prefix);
-	}
-
-	public void setTextContent(String textContent) throws DOMException {
-		wrappedNode.setTextContent(textContent);
-	}
-
-	public Object setUserData(String key, Object data, UserDataHandler handler) {
-		return wrappedNode.setUserData(key, data, handler);
-	}
 }

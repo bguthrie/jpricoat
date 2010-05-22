@@ -10,9 +10,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * A NodeList for rational human beings who like their things named lists to maybe act like lists.
- * I know, I know: crazy hippie talk.
- * @author bguthrie
+ * A NodeList for people who like things named "list" to maybe act like lists.
  */
 public class HumaneNodeList implements NodeList, List<Node> {
 	

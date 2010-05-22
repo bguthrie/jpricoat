@@ -19,19 +19,19 @@ public class JpricoatTest {
 	@Test
 	public void searchShouldBeEmptyGivenEmptyDocument() throws Exception {
 		Document empty = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-		assertEquals(0, new Jpricoat(empty).search("body").getChildNodes().getLength());
+		assertEquals(0, new Jpricoat(empty).search("body").allNodes().getLength());
 	}
 	
 	@Test
 	public void searchShouldReturnOneElement() throws Exception {
 		Node test = node("<div class=\"content\">Some content</div>");
-		assertEquals(1, new Jpricoat(test).search("div.content").getChildNodes().getLength());
+		assertEquals(1, new Jpricoat(test).search("div.content").allNodes().getLength());
 	}
 	
 	@Test
 	public void searchShouldReturnEveryElement() throws Exception {
 		Node test = node("<a href=\"http://www.google.com\">Google!</a><a href=\"http://www.thoughtworks.com\">ThoughtWorks!</a>");
-		assertEquals(2, new Jpricoat(test).search("a").getChildNodes().getLength());
+		assertEquals(2, new Jpricoat(test).search("a").allNodes().getLength());
 	}
 	
 	@Test
@@ -41,9 +41,9 @@ public class JpricoatTest {
 				"<a href=\"http://www.google.com\">Google!</a>" + 
 				"<a href=\"http://www.thoughtworks.com\">ThoughtWorks!</a>" +
 			"</div>");
-		IJpricoat rootSearch = new Jpricoat(root).search("div.links");
-		assertEquals(1, rootSearch.getChildNodes().getLength());
-		assertEquals(2, rootSearch.search("a").getChildNodes().getLength());
+		Jpricoat rootSearch = new Jpricoat(root).search("div.links");
+		assertEquals(1, rootSearch.allNodes().getLength());
+		assertEquals(2, rootSearch.search("a").allNodes().getLength());
 	}
 	
 	@Test
@@ -53,8 +53,8 @@ public class JpricoatTest {
 					"<h1>A heading!</h1>" +
 					"<h2>A subheading!</h2>" +
 				"</div>");
-		IJpricoat search = new Jpricoat(root).search("div.content").search("h1", "h2");
-		assertEquals(2, search.getChildNodes().getLength());
+		Jpricoat search = new Jpricoat(root).search("div.content").search("h1", "h2");
+		assertEquals(2, search.allNodes().getLength());
 	}
 	
    @Test
@@ -63,8 +63,8 @@ public class JpricoatTest {
                "<div class=\"content\">" +
                        "<h1 class=\"heading\">A heading!</h1>" +
                "</div>");
-       IJpricoat search = new Jpricoat(root).search(".content").search("h1", ".heading");
-       assertEquals(1, search.getChildNodes().getLength());
+       Jpricoat search = new Jpricoat(root).search(".content").search("h1", ".heading");
+       assertEquals(1, search.allNodes().getLength());
    }
 	
 	private Node node(String markup) throws Exception {
